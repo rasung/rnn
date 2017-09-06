@@ -108,7 +108,7 @@ if __name__ == '__main__':
         # Cross entropy cost/loss
         cost_i = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=Y_one_hot)
         cost = tf.reduce_mean(cost_i)
-        cost_summ = tf.scalar_summary('cost', cost)
+        cost_summ = tf.summary.scalar('cost', cost)
 
 
     with tf.name_scope("accuracy") as scope:
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         prediction = tf.argmax(hypothesis, 1)
         correct_prediction = tf.equal(prediction, tf.argmax(Y_one_hot, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        accuracy_summ = tf.scalar_summary('accuracy', accuracy)
+        accuracy_summ = tf.summary.scalar('accuracy', accuracy)
 
 
     with tf.name_scope("train") as scope:
