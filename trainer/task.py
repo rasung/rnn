@@ -81,8 +81,8 @@ if __name__ == '__main__':
         W1 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length, softmax_hidden_size]), name='weight1')
         b1 = tf.Variable(tf.random_normal([softmax_hidden_size]), name='bias1')
 
-        w1_hist = tf.histogram_summary("weights1", W1)
-        b1_hist = tf.histogram_summary("biases1", b1)
+        w1_hist = tf.summary.histogram("weights1", W1)
+        b1_hist = tf.summary.histogram("biases1", b1)
 
         outputs = tf.matmul(outputs, W1) + b1
 
@@ -92,8 +92,8 @@ if __name__ == '__main__':
         W2 = tf.Variable(tf.random_normal([softmax_hidden_size, output_num_classes]), name='weight2')
         b2 = tf.Variable(tf.random_normal([output_num_classes]), name='bias2')
 
-        w2_hist = tf.histogram_summary("weights2", W2)
-        b2_hist = tf.histogram_summary("biases2", b2)
+        w2_hist = tf.summary.histogram("weights2", W2)
+        b2_hist = tf.summary.histogram("biases2", b2)
 
         # tf.nn.softmax computes softmax activations
         logits = tf.matmul(outputs, W2) + b2
