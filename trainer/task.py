@@ -37,7 +37,7 @@ if __name__ == '__main__':
     input_num_classes = 18
     output_num_classes = 18
     stack = 5
-    softmax_count = 3
+    softmax_count = 2
     softmax_hidden_size = input_sequence_length
 
     X = tf.placeholder(tf.int32, [None, input_sequence_length])
@@ -69,16 +69,11 @@ if __name__ == '__main__':
 
     outputs = tf.matmul(outputs, W1) + b1
 
-    W2 = tf.Variable(tf.random_normal([softmax_hidden_size, softmax_hidden_size]), name='weight2')
-    b2 = tf.Variable(tf.random_normal([softmax_hidden_size]), name='bias2')
-
-    outputs = tf.matmul(outputs, W2) + b2
-
-    W3 = tf.Variable(tf.random_normal([softmax_hidden_size, output_num_classes]), name='weight3')
-    b3 = tf.Variable(tf.random_normal([output_num_classes]), name='bias3')
+    W2 = tf.Variable(tf.random_normal([softmax_hidden_size, output_num_classes]), name='weight2')
+    b2 = tf.Variable(tf.random_normal([output_num_classes]), name='bias2')
 
     # tf.nn.softmax computes softmax activations
-    logits = tf.matmul(outputs, W3) + b3
+    logits = tf.matmul(outputs, W2) + b2
     hypothesis = tf.nn.softmax(logits)
 
     # Cross entropy cost/loss
