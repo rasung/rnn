@@ -7,7 +7,10 @@ import os
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-
+    parser.add_argument(
+        '--log-dir',
+        required=True
+    )
     parser.add_argument(
         '--train-file',
         required=True
@@ -29,10 +32,11 @@ if __name__ == '__main__':
     pathToJobDir = arguments.pop('job_dir')
     jobName = arguments.pop('job_name')
     pathToData = arguments.pop('train_file')
+    pathToLogDir = arguments.pop('log_dir')
 
     csv_file = pathToData
+    log_dir = pathToLogDir
 
-    log_dir = './log/'
     hidden_size = 4
     batch_size = 1
     input_sequence_length = 30  
