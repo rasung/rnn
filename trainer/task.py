@@ -30,13 +30,15 @@ if __name__ == '__main__':
 
 
     csv_file = pathToData
-    hidden_size = 3
+    hidden_size = 4
     batch_size = 1
     input_sequence_length = 30  
     output_sequence_length = 1
     input_num_classes = 18
     output_num_classes = 18
     stack = 5
+    softmax_count = 3
+    softmax_hidden_size = input_sequence_length
 
     X = tf.placeholder(tf.int32, [None, input_sequence_length])
     X_one_hot = tf.one_hot(X, input_num_classes)
@@ -62,16 +64,21 @@ if __name__ == '__main__':
     outputs = tf.reshape(outputs, [batch_size, hidden_size * input_sequence_length])
 
 
-    W1 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length, hidden_size * input_sequence_length]), name='weight1')
-    b1 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length]), name='bias1')
+    W1 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length, softmax_hidden_size]), name='weight1')
+    b1 = tf.Variable(tf.random_normal([softmax_hidden_size]), name='bias1')
 
     outputs = tf.matmul(outputs, W1) + b1
 
-    W2 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length, output_num_classes]), name='weight2')
-    b2 = tf.Variable(tf.random_normal([output_num_classes]), name='bias2')
+    W2 = tf.Variable(tf.random_normal([softmax_hidden_size, softmax_hidden_size]), name='weight2')
+    b2 = tf.Variable(tf.random_normal([softmax_hidden_size]), name='bias2')
+
+    outputs = tf.matmul(outputs, W2) + b2
+
+    W3 = tf.Variable(tf.random_normal([softmax_hidden_size, output_num_classes]), name='weight3')
+    b3 = tf.Variable(tf.random_normal([output_num_classes]), name='bias3')
 
     # tf.nn.softmax computes softmax activations
-    logits = tf.matmul(outputs, W2) + b2
+    logits = tf.matmul(outputs, W3) + b3
     hypothesis = tf.nn.softmax(logits)
 
     # Cross entropy cost/loss
@@ -101,7 +108,7 @@ if __name__ == '__main__':
         threads = tf.train.start_queue_runners(coord=coord)
 
         i=0
-        while i < 100000:
+        while i < 6000000:
             i+=1
             datas = sess.run(data)
         
