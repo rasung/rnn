@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
         sess.run(tf.global_variables_initializer())
 
-        merged = tf.merge_all_summaries()
+        merged = tf.summary.merge_all()
         writer = tf.train.SummaryWriter(log_dir, sess.graph_def)
 
         coord = tf.train.Coordinator()
