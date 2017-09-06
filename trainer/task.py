@@ -141,7 +141,7 @@ if __name__ == '__main__':
         sess.run(tf.global_variables_initializer())
 
         merged = tf.summary.merge_all()
-        writer = tf.train.SummaryWriter(log_dir, sess.graph_def)
+        writer = tf.summary.FileWriter(log_dir, sess.graph)
 
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
