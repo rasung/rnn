@@ -35,7 +35,7 @@ if __name__ == '__main__':
     pathToLogDir = arguments.pop('log_dir')
 
     csv_file = pathToData
-    log_dir = pathToLogDir
+    log_dir = './log'
 
     hidden_size = 4
     batch_size = 1
