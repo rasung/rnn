@@ -147,7 +147,7 @@ if __name__ == '__main__':
         threads = tf.train.start_queue_runners(coord=coord)
 
         step=0
-        while step < 1000:
+        while step < 10000:
             step+=1
             datas = sess.run(data)
         
