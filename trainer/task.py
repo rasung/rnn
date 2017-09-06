@@ -8,6 +8,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        '--log-dir',
+        required=True
+    )
+    parser.add_argument(
         '--train-file',
         required=True
     )
@@ -24,12 +28,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     arguments = args.__dict__
 
+
     pathToJobDir = arguments.pop('job_dir')
     jobName = arguments.pop('job_name')
     pathToData = arguments.pop('train_file')
-
+    pathToLogDir = arguments.pop('log_dir')
 
     csv_file = pathToData
+    log_dir = pathToLogDir
+
     hidden_size = 4
     batch_size = 1
     input_sequence_length = 30  
@@ -39,72 +46,109 @@ if __name__ == '__main__':
     stack = 5
     softmax_count = 2
     softmax_hidden_size = input_sequence_length
+    
 
-    X = tf.placeholder(tf.int32, [None, input_sequence_length])
-    X_one_hot = tf.one_hot(X, input_num_classes)
-    print("X_one_hot", X_one_hot)  # check out the shape
+    with tf.name_scope("placeholder") as scope:
 
-    Y = tf.placeholder(tf.int32, [None, output_sequence_length])  # 1
-    Y_one_hot = tf.one_hot(Y, output_num_classes)  # one hot
-    print("Y_one_hot", Y_one_hot)
-    Y_one_hot = tf.reshape(Y_one_hot, [-1, output_num_classes])
-    print("Y_reshape", Y_one_hot)
+        X = tf.placeholder(tf.int32, [None, input_sequence_length], name="x_input")
+        X_one_hot = tf.one_hot(X, input_num_classes)
+        print("X_one_hot", X_one_hot)  # check out the shape
 
-
-    # Make a lstm cell with hidden_size (each unit output vector size)
-    def lstm_cell():
-        cell = rnn.BasicLSTMCell(hidden_size, state_is_tuple=True)
-        return cell
-
-    multi_cells = rnn.MultiRNNCell([lstm_cell() for _ in range(stack)], state_is_tuple=True)
-
-    # outputs: unfolding size x hidden size, state = hidden size
-    outputs, _states = tf.nn.dynamic_rnn(multi_cells, X_one_hot, dtype=tf.float32)
-    # reshape out
-    outputs = tf.reshape(outputs, [batch_size, hidden_size * input_sequence_length])
+        Y = tf.placeholder(tf.int32, [None, output_sequence_length], name="y_input")  # 1
+        Y_one_hot = tf.one_hot(Y, output_num_classes)  # one hot
+        print("Y_one_hot", Y_one_hot)
+        Y_one_hot = tf.reshape(Y_one_hot, [-1, output_num_classes])
+        print("Y_reshape", Y_one_hot)
 
 
-    W1 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length, softmax_hidden_size]), name='weight1')
-    b1 = tf.Variable(tf.random_normal([softmax_hidden_size]), name='bias1')
+    with tf.name_scope("rnn") as scope:
 
-    outputs = tf.matmul(outputs, W1) + b1
+        # Make a lstm cell with hidden_size (each unit output vector size)
+        def lstm_cell():
+            cell = rnn.BasicLSTMCell(hidden_size, state_is_tuple=True)
+            return cell
 
-    W2 = tf.Variable(tf.random_normal([softmax_hidden_size, output_num_classes]), name='weight2')
-    b2 = tf.Variable(tf.random_normal([output_num_classes]), name='bias2')
+        multi_cells = rnn.MultiRNNCell([lstm_cell() for _ in range(stack)], state_is_tuple=True)
 
-    # tf.nn.softmax computes softmax activations
-    logits = tf.matmul(outputs, W2) + b2
-    hypothesis = tf.nn.softmax(logits)
-
-    # Cross entropy cost/loss
-    cost_i = tf.nn.softmax_cross_entropy_with_logits(logits=logits,
-                                                    labels=Y_one_hot)
-    cost = tf.reduce_mean(cost_i)
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1).minimize(cost)
-
-    prediction = tf.argmax(hypothesis, 1)
-    correct_prediction = tf.equal(prediction, tf.argmax(Y_one_hot, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        # outputs: unfolding size x hidden size, state = hidden size
+        outputs, _states = tf.nn.dynamic_rnn(multi_cells, X_one_hot, dtype=tf.float32)
+        # reshape out
+        outputs = tf.reshape(outputs, [batch_size, hidden_size * input_sequence_length])
 
 
-    filename_queue = tf.train.string_input_producer([csv_file])
-    key, value = tf.TextLineReader().read(filename_queue)
+    with tf.name_scope("softmax_Layer_1") as scope:
 
-    input_list = []
-    for l in range(input_sequence_length + 1 + 1):
-        input_list.append([1])
+        W1 = tf.Variable(tf.random_normal([hidden_size * input_sequence_length, softmax_hidden_size]), name='weight1')
+        b1 = tf.Variable(tf.random_normal([softmax_hidden_size]), name='bias1')
 
-    data = tf.decode_csv(value, record_defaults=input_list)
+        w1_hist = tf.histogram_summary("weights1", W1)
+        b1_hist = tf.histogram_summary("biases1", b1)
+
+        outputs = tf.matmul(outputs, W1) + b1
+
+
+    with tf.name_scope("softmax_Layer_2") as scope:
+
+        W2 = tf.Variable(tf.random_normal([softmax_hidden_size, output_num_classes]), name='weight2')
+        b2 = tf.Variable(tf.random_normal([output_num_classes]), name='bias2')
+
+        w2_hist = tf.histogram_summary("weights2", W2)
+        b2_hist = tf.histogram_summary("biases2", b2)
+
+        # tf.nn.softmax computes softmax activations
+        logits = tf.matmul(outputs, W2) + b2
+    
+
+    with tf.name_scope("hypothesis") as scope:
+        
+        hypothesis = tf.nn.softmax(logits)
+
+
+    with tf.name_scope("cost") as scope:
+        # Cross entropy cost/loss
+        cost_i = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=Y_one_hot)
+        cost = tf.reduce_mean(cost_i)
+        cost_summ = tf.scalar_summary('cost', cost)
+
+
+    with tf.name_scope("accuracy") as scope:
+
+        prediction = tf.argmax(hypothesis, 1)
+        correct_prediction = tf.equal(prediction, tf.argmax(Y_one_hot, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        accuracy_summ = tf.scalar_summary('accuracy', accuracy)
+
+
+    with tf.name_scope("train") as scope:
+    
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1).minimize(cost)
+
+
+    with tf.name_scope("get_input_data") as scope:
+
+        filename_queue = tf.train.string_input_producer([csv_file])
+        key, value = tf.TextLineReader().read(filename_queue)
+
+        input_list = []
+        for l in range(input_sequence_length + 1 + 1):
+            input_list.append([1])
+
+        data = tf.decode_csv(value, record_defaults=input_list)
+
 
     with tf.Session() as sess:
+
         sess.run(tf.global_variables_initializer())
+
+        merged = tf.merge_all_summaries()
+        writer = tf.train.SummaryWriter(log_dir, sess.graph_def)
 
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
 
-        i=0
-        while i < 6000000:
-            i+=1
+        step=0
+        while step < 6000000:
+            step+=1
             datas = sess.run(data)
         
             dataX = []
@@ -113,16 +157,18 @@ if __name__ == '__main__':
             # else if testing min value = dataX.append(datas[0:-2]) dataY.append(datas[-1:])
             dataX.append(datas[0:-2])
             dataY.append(datas[-2:-1])
-
-            print(i, dataX, dataY)
             
-            _, loss, accur, hypo = sess.run([optimizer, cost, accuracy, hypothesis], feed_dict={X: dataX, Y: dataY})
+            _, loss, accur, hypo, summary = sess.run([optimizer, cost, accuracy, hypothesis, merged], feed_dict={X: dataX, Y: dataY})
+
+            writer.add_summary(summary, step)
 
             hypo_list=[]
             for j in range(len(hypo[0])):
                 hypo_list.append(round(hypo[0][j], 2))
 
+            print(step, dataX, dataY)
             print(loss, accur, hypo_list)
+
 
         coord.request_stop()
         coord.join(threads)
