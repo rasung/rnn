@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
 
     csv_file = pathToData
-    hidden_size = 5
+    hidden_size = 3
     batch_size = 1
     input_sequence_length = 30  
     output_sequence_length = 1
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         threads = tf.train.start_queue_runners(coord=coord)
 
         i=0
-        while i < 100:
+        while i < 100000:
             i+=1
             datas = sess.run(data)
         
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
             hypo_list=[]
             for j in range(len(hypo[0])):
-                hypo_list.append(round(hypo[0][j], 3))
+                hypo_list.append(round(hypo[0][j], 2))
 
             print(loss, accur, hypo_list)
 
